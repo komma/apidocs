@@ -32,6 +32,8 @@ currentbranch=$(git symbolic-ref --short -q HEAD)
 if [ "$create_deploy_branch" = true ]; then
 	# create new orphan branch if deploy branch does not exist
 	git checkout --orphan "$deploy_branch" &>/dev/null
+	# clear index and working tree
+	git rm -rf . &>/dev/null
 fi
 # delete existing files
 rm -rf *
