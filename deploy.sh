@@ -15,7 +15,13 @@ message="Built from $(git rev-parse --short HEAD)"
 
 # create temp dir and clone deploy repository
 tempdir=$(mktemp -d -p .)
-if ! git clone --single-branch --branch "$deploy_branch" "$remote_url" "$tempdir"; then exit; fi
+create_deploy_branch=false
+# try to clone only deploy branch
+if ! git clone --single-branch --branch "$deploy_branch" "$remote_url" "$tempdir"; then
+	create_deploy_branch=true
+	# clone the default branch (e.g. master)
+	git clone --single-branch "$remote_url" "$tempdir"
+fi
 
 # change to deploy repository
 cd "$tempdir"
@@ -23,14 +29,12 @@ cd "$tempdir"
 currentbranch=$(git symbolic-ref --short -q HEAD)
 # check if the current branch is equal to the deploy branch
 # it is not equal if deploy branch does not exist yet
-if [ "$deploy_branch" != "$currentbranch" ]
-then
-	if ! git checkout "$deploy_branch" &>/dev/null
-	then
-		git checkout --orphan "$deploy_branch" &>/dev/null
-	        git rm -rf . &>/dev/null
-	fi
+if [ "$create_deploy_branch" = true ]; then
+	# create new orphan branch if deploy branch does not exist
+	git checkout --orphan "$deploy_branch" &>/dev/null
 fi
+# delete existing files
+rm -rf *
 # copy generated files
 cp -R "$target/." .
 
