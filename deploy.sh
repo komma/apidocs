@@ -19,8 +19,18 @@ if ! git clone --single-branch --branch "$deploy_branch" "$remote_url" "$tempdir
 
 # change to deploy repository
 cd "$tempdir"
-# remove existing files
-git rm -rf . &>/dev/null
+
+currentbranch=$(git symbolic-ref --short -q HEAD)
+# check if the current branch is equal to the deploy branch
+# it is not equal if deploy branch does not exist yet
+if [ "$deploy_branch" != "$currentbranch" ]
+then
+	if ! git checkout "$deploy_branch" &>/dev/null
+	then
+		git checkout --orphan "$deploy_branch" &>/dev/null
+	        git rm -rf . &>/dev/null
+	fi
+fi
 # copy generated files
 cp -R "$target/." .
 
